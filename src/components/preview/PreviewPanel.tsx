@@ -96,8 +96,19 @@ export function PreviewPanel() {
             onClick={reload}
             className="h-7 text-xs"
             disabled={!previewHtml}
+            title="Reload"
           >
             <RotateCw className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={openInNewTab}
+            className="h-7 text-xs"
+            disabled={!previewHtml}
+            title="Open preview in new tab"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
