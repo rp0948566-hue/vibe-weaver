@@ -1,8 +1,4 @@
 import { create } from "zustand";
-import { DEMO_APP_CODE } from "@/lib/demoApp";
-import { buildIframeHtml } from "@/services/iframeBuilder";
-
-const DEMO_HTML = buildIframeHtml(DEMO_APP_CODE);
 
 export type ChatMessage = {
   id: string;
@@ -38,12 +34,12 @@ interface RaincastState {
 
 export const useRaincastStore = create<RaincastState>((set) => ({
   messages: [],
-  currentCode: DEMO_APP_CODE,
-  previewHtml: DEMO_HTML,
+  currentCode: "",
+  previewHtml: "",
   isBuilding: false,
   selectedModel: "google/gemini-3-flash-preview",
   activeProjectId: null,
-  activeProjectTitle: "AVANT S — Demo",
+  activeProjectTitle: "Untitled",
   device: "desktop",
   previewError: null,
 
@@ -69,10 +65,10 @@ export const useRaincastStore = create<RaincastState>((set) => ({
   resetProject: () =>
     set({
       messages: [],
-      currentCode: DEMO_APP_CODE,
-      previewHtml: DEMO_HTML,
+      currentCode: "",
+      previewHtml: "",
       activeProjectId: null,
-      activeProjectTitle: "AVANT S — Demo",
+      activeProjectTitle: "Untitled",
       previewError: null,
     }),
 }));
