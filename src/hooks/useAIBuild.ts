@@ -34,14 +34,9 @@ export function useAIBuild() {
       if (!prompt.trim() || store.isBuilding) return;
 
       const { data: authData } = await supabase.auth.getUser();
-      const userId = authData.user?.id;
-      if (!userId) {
-        toast.error("Please sign in first");
-        return;
-      }
-
-      const projectId = await ensureProject(userId, prompt);
-      if (!projectId) return;
+      const userId = authData.user?.id ?? null;
+      // Guest mode: no userId → skip persistence but still run the build
+      const projectId = userId ? await ensureProject(userId, prompt) : null;
 
       const userMsg = {
         id: crypto.randomUUID(),
@@ -59,18 +54,19 @@ export function useAIBuild() {
       store.setBuilding(true);
       store.setPreviewError(null);
 
-      // Persist the user message (fire-and-forget)
-      supabase
-        .from("messages")
-        .insert({
-          project_id: projectId,
-          user_id: userId,
-          role: "user",
-          content: prompt,
-        })
-        .then(({ error }) => {
-          if (error) console.warn("persist user msg", error);
-        });
+      if (userId && projectId) {
+        supabase
+          .from("messages")
+          .insert({
+            project_id: projectId,
+            user_id: userId,
+            role: "user",
+            content: prompt,
+          })
+          .then(({ error }) => {
+            if (error) console.warn("persist user msg", error);
+          });
+      }
 
       const history: ChatMessage[] = useRaincastStore
         .getState()
@@ -88,7 +84,6 @@ export function useAIBuild() {
           useRaincastStore
             .getState()
             .updateAssistantMessage(asstId, accumulated);
-          // Try to live-update the code panel as code streams in
           const partial = extractPartialCode(accumulated);
           if (partial && partial.length > 40) {
             useRaincastStore.getState().setCode(partial);
@@ -102,29 +97,30 @@ export function useAIBuild() {
               .getState()
               .setPreviewHtml(buildIframeHtml(finalCode));
 
-            // Persist assistant message + build
-            supabase
-              .from("messages")
-              .insert({
-                project_id: projectId,
-                user_id: userId,
-                role: "assistant",
-                content: accumulated,
-              })
-              .then(({ error }) => {
-                if (error) console.warn("persist assistant msg", error);
-              });
-            supabase
-              .from("builds")
-              .insert({
-                project_id: projectId,
-                user_id: userId,
-                code: finalCode,
-                model: store.selectedModel,
-              })
-              .then(({ error }) => {
-                if (error) console.warn("persist build", error);
-              });
+            if (userId && projectId) {
+              supabase
+                .from("messages")
+                .insert({
+                  project_id: projectId,
+                  user_id: userId,
+                  role: "assistant",
+                  content: accumulated,
+                })
+                .then(({ error }) => {
+                  if (error) console.warn("persist assistant msg", error);
+                });
+              supabase
+                .from("builds")
+                .insert({
+                  project_id: projectId,
+                  user_id: userId,
+                  code: finalCode,
+                  model: store.selectedModel,
+                })
+                .then(({ error }) => {
+                  if (error) console.warn("persist build", error);
+                });
+            }
             toast.success("Build ready");
           } else {
             toast.error("AI didn't return any code. Try again.");

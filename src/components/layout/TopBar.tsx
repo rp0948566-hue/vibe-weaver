@@ -1,4 +1,5 @@
-import { Zap, Plus, FolderOpen, Settings } from "lucide-react";
+import { Zap, Plus, FolderOpen, LogOut, UserRound } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useRaincastStore } from "@/store/raincastStore";
 import { AVAILABLE_MODELS } from "@/services/aiRouter";
 import { Button } from "@/components/ui/button";
@@ -10,20 +11,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { disableGuestMode } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface TopBarProps {
   onOpenProjects: () => void;
   userEmail?: string | null;
+  isGuest?: boolean;
 }
 
-export function TopBar({ onOpenProjects, userEmail }: TopBarProps) {
+export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
+  const navigate = useNavigate();
   const selectedModel = useRaincastStore((s) => s.selectedModel);
   const setModel = useRaincastStore((s) => s.setModel);
   const resetProject = useRaincastStore((s) => s.resetProject);
   const title = useRaincastStore((s) => s.activeProjectTitle);
 
   const signOut = async () => {
+    if (isGuest) {
+      disableGuestMode();
+      navigate("/auth");
+      return;
+    }
     await supabase.auth.signOut();
     toast.success("Signed out");
   };
