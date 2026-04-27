@@ -46,9 +46,29 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <div className="prose prose-invert prose-sm max-w-none prose-headings:mt-3 prose-headings:mb-1.5 prose-p:my-1.5 prose-ul:my-1.5 prose-pre:hidden prose-code:text-primary">
+          <div className="prose prose-invert prose-sm max-w-none prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-pre:hidden prose-code:text-primary prose-strong:text-foreground">
             {text ? (
-              <ReactMarkdown>{text}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  h1: ({ children }) => (
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary mt-3 mb-1.5">
+                      {children}
+                    </div>
+                  ),
+                  h2: ({ children }) => (
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary mt-3 mb-1.5">
+                      {children}
+                    </div>
+                  ),
+                  h3: ({ children }) => (
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary mt-3 mb-1.5">
+                      {children}
+                    </div>
+                  ),
+                }}
+              >
+                {text}
+              </ReactMarkdown>
             ) : !writingCode ? (
               <div className="raincast-typing">
                 <span />
