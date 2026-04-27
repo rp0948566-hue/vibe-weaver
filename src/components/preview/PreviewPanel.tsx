@@ -6,12 +6,14 @@ import {
   RotateCw,
   AlertTriangle,
   Play,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRaincastStore } from "@/store/raincastStore";
 import { useAIBuild } from "@/hooks/useAIBuild";
 import { usePreviewErrors } from "@/hooks/usePreviewErrors";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const SIZES = {
   desktop: { w: "100%", h: "100%" },
@@ -37,6 +39,18 @@ export function PreviewPanel() {
   }, [previewHtml, setPreviewError]);
 
   const reload = () => setNonce((n) => n + 1);
+
+  const openInNewTab = () => {
+    if (!previewHtml) return;
+    const blob = new Blob([previewHtml], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      toast.error("Popup blocked — allow popups for this site");
+    }
+    // Revoke later so the new tab has time to load
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
 
   const size = SIZES[device];
 
@@ -82,8 +96,19 @@ export function PreviewPanel() {
             onClick={reload}
             className="h-7 text-xs"
             disabled={!previewHtml}
+            title="Reload"
           >
             <RotateCw className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={openInNewTab}
+            className="h-7 text-xs"
+            disabled={!previewHtml}
+            title="Open preview in new tab"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
