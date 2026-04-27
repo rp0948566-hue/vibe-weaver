@@ -46,8 +46,13 @@ export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
         <span className="font-semibold tracking-tight">RAINCAST</span>
       </div>
 
-      <div className="text-sm text-muted-foreground truncate max-w-[240px]">
+      <div className="text-sm text-muted-foreground truncate max-w-[240px] flex items-center gap-2">
         {title}
+        {isGuest && (
+          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30">
+            Guest
+          </span>
+        )}
       </div>
 
       <div className="ml-auto flex items-center gap-2">
@@ -74,23 +79,46 @@ export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
           New
         </Button>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onOpenProjects}
-          className="h-8 gap-1.5"
-        >
-          <FolderOpen className="w-4 h-4" />
-          Projects
-        </Button>
+        {!isGuest && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onOpenProjects}
+            className="h-8 gap-1.5"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Projects
+          </Button>
+        )}
+
+        {isGuest && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              disableGuestMode();
+              navigate("/auth");
+            }}
+            className="h-8 gap-1.5"
+          >
+            <UserRound className="w-4 h-4" />
+            Sign in to save
+          </Button>
+        )}
 
         <div className="h-6 w-px bg-border mx-1" />
 
         <span className="text-xs text-muted-foreground hidden sm:inline">
           {userEmail}
         </span>
-        <Button size="sm" variant="ghost" onClick={signOut} className="h-8">
-          <Settings className="w-4 h-4" />
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={signOut}
+          className="h-8"
+          title={isGuest ? "Exit guest" : "Sign out"}
+        >
+          <LogOut className="w-4 h-4" />
         </Button>
       </div>
     </header>
