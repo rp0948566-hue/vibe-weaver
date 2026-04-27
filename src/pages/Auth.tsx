@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Zap, Loader2, UserRound } from "lucide-react";
+import { Loader2, UserRound, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,6 @@ export default function Auth() {
         });
         if (error) throw error;
         toast.success("Account created! Check your inbox to confirm.");
-        // If auto-confirm is off, session is null; if on, navigate
         const { data } = await supabase.auth.getSession();
         if (data.session) navigate("/");
       } else {
@@ -47,20 +46,30 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-[#0d0d18] to-[#0a0a0f]">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-semibold tracking-tight">RAINCAST</span>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden raincast-aurora">
+      {/* Grain */}
+      <div className="absolute inset-0 raincast-grain pointer-events-none" />
+
+      {/* Subtle orbs */}
+      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-sm relative">
+        <div className="flex flex-col items-center mb-10">
+          <div className="relative w-12 h-12 rounded-2xl raincast-orb mb-4" />
+          <h1 className="font-display text-4xl leading-none tracking-tight">
+            RAIN<span className="italic text-primary">CAST</span>
+          </h1>
+          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground mt-2">
+            Vibe coding, at the speed of thought
+          </p>
         </div>
 
         <div className="raincast-panel p-6">
-          <h1 className="text-lg font-semibold mb-1">
+          <h2 className="text-base font-semibold mb-1">
             {mode === "signin" ? "Welcome back" : "Create your account"}
-          </h1>
-          <p className="text-sm text-muted-foreground mb-5">
+          </h2>
+          <p className="text-xs text-muted-foreground mb-5">
             {mode === "signin"
               ? "Sign in to pick up where you left off."
               : "Build apps just by describing them."}
@@ -68,7 +77,7 @@ export default function Auth() {
 
           <form onSubmit={submit} className="space-y-3">
             <div>
-              <Label htmlFor="email" className="text-xs">
+              <Label htmlFor="email" className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Email
               </Label>
               <Input
@@ -77,12 +86,12 @@ export default function Auth() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-background border-border mt-1"
+                className="bg-background border-border mt-1.5 h-10"
                 placeholder="you@example.com"
               />
             </div>
             <div>
-              <Label htmlFor="password" className="text-xs">
+              <Label htmlFor="password" className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Password
               </Label>
               <Input
@@ -92,13 +101,22 @@ export default function Auth() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-background border-border mt-1"
+                className="bg-background border-border mt-1.5 h-10"
                 placeholder="••••••••"
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-10 shadow-[var(--shadow-glow)] hover:brightness-110 transition-all group"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
               {mode === "signin" ? "Sign in" : "Create account"}
+              {!loading && (
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" />
+              )}
             </Button>
           </form>
 
@@ -107,7 +125,7 @@ export default function Auth() {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-panel px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="bg-panel px-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                 or
               </span>
             </div>
@@ -116,7 +134,7 @@ export default function Auth() {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full h-10 border-border bg-background/50 hover:bg-secondary hover:border-primary/40 transition-all"
             onClick={() => {
               enableGuestMode();
               toast.success("Continuing as guest — projects won't be saved");
@@ -126,24 +144,31 @@ export default function Auth() {
             <UserRound className="w-4 h-4 mr-2" />
             Continue as guest
           </Button>
-          <p className="text-[11px] text-muted-foreground text-center mt-2">
+          <p className="text-[10px] text-muted-foreground text-center mt-2">
             Try RAINCAST instantly. Sign in later to save your projects.
           </p>
 
-          <div className="text-center mt-4">
+          <div className="text-center mt-5 pt-4 border-t border-border">
             <button
               type="button"
               onClick={() =>
                 setMode((m) => (m === "signin" ? "signup" : "signin"))
               }
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {mode === "signin"
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+                ? "Don't have an account? "
+                : "Already have an account? "}
+              <span className="text-primary font-medium">
+                {mode === "signin" ? "Sign up" : "Sign in"}
+              </span>
             </button>
           </div>
         </div>
+
+        <p className="text-center text-[10px] text-muted-foreground mt-6">
+          Built with Lovable · Powered by Lovable AI
+        </p>
       </div>
     </div>
   );
