@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 export default function Index() {
-  const { user, loading } = useAuth();
+  const { user, guest, hasAccess, loading } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (loading) {
@@ -25,7 +25,7 @@ export default function Index() {
     );
   }
 
-  if (!user) {
+  if (!hasAccess) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -33,7 +33,8 @@ export default function Index() {
     <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">
       <TopBar
         onOpenProjects={() => setDrawerOpen(true)}
-        userEmail={user.email}
+        userEmail={user?.email ?? (guest ? "Guest" : null)}
+        isGuest={guest && !user}
       />
       <div className="flex-1 min-h-0 p-2">
         <ResizablePanelGroup

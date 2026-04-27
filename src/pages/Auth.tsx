@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Zap, Loader2 } from "lucide-react";
+import { Zap, Loader2, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { enableGuestMode } from "@/hooks/useAuth";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -100,6 +101,34 @@ export default function Auth() {
               {mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-panel px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                or
+              </span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              enableGuestMode();
+              toast.success("Continuing as guest — projects won't be saved");
+              navigate("/");
+            }}
+          >
+            <UserRound className="w-4 h-4 mr-2" />
+            Continue as guest
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-2">
+            Try RAINCAST instantly. Sign in later to save your projects.
+          </p>
 
           <div className="text-center mt-4">
             <button
