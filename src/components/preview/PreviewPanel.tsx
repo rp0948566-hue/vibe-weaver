@@ -40,6 +40,18 @@ export function PreviewPanel() {
 
   const reload = () => setNonce((n) => n + 1);
 
+  const openInNewTab = () => {
+    if (!previewHtml) return;
+    const blob = new Blob([previewHtml], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      toast.error("Popup blocked — allow popups for this site");
+    }
+    // Revoke later so the new tab has time to load
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
   const size = SIZES[device];
 
   return (
