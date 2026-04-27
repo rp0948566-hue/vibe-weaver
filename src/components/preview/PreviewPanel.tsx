@@ -6,12 +6,14 @@ import {
   RotateCw,
   AlertTriangle,
   Play,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRaincastStore } from "@/store/raincastStore";
 import { useAIBuild } from "@/hooks/useAIBuild";
 import { usePreviewErrors } from "@/hooks/usePreviewErrors";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const SIZES = {
   desktop: { w: "100%", h: "100%" },
