@@ -145,6 +145,12 @@ export function PreviewPanel() {
           </div>
         )}
 
+        {isBuilding && (
+          <div className="raincast-progress-track">
+            <div className="raincast-progress-bar" />
+          </div>
+        )}
+
         {previewError && (
           <div className="absolute inset-x-4 bottom-4 bg-destructive/10 border border-destructive/40 backdrop-blur rounded-md p-3 text-xs text-destructive flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
