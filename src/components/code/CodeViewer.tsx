@@ -99,8 +99,14 @@ export function CodeViewer() {
             }}
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-            Your generated code will appear here.
+          <div className="h-full flex flex-col items-center justify-center text-center px-6">
+            <div className="font-mono text-[10px] text-muted-foreground/60 mb-3 tracking-[0.2em] uppercase">
+              const App = () =&gt; …
+            </div>
+            <p className="font-display text-2xl text-foreground mb-1">Code</p>
+            <p className="text-xs text-muted-foreground max-w-[260px]">
+              Your generated source will stream here character by character.
+            </p>
           </div>
         )}
       </div>

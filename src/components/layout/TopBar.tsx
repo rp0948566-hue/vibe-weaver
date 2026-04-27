@@ -1,4 +1,4 @@
-import { Zap, Plus, FolderOpen, LogOut, UserRound } from "lucide-react";
+import { Plus, FolderOpen, LogOut, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useRaincastStore } from "@/store/raincastStore";
 import { AVAILABLE_MODELS } from "@/services/aiRouter";
@@ -26,6 +26,7 @@ export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
   const setModel = useRaincastStore((s) => s.setModel);
   const resetProject = useRaincastStore((s) => s.resetProject);
   const title = useRaincastStore((s) => s.activeProjectTitle);
+  const isBuilding = useRaincastStore((s) => s.isBuilding);
 
   const signOut = async () => {
     if (isGuest) {
@@ -38,26 +39,41 @@ export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
   };
 
   return (
-    <header className="h-12 shrink-0 border-b border-border bg-panel flex items-center px-3 gap-3">
-      <div className="flex items-center gap-2 pr-3 border-r border-border h-full">
-        <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center">
-          <Zap className="w-4 h-4 text-white" />
-        </div>
-        <span className="font-semibold tracking-tight">RAINCAST</span>
+    <header className="h-12 shrink-0 border-b border-border bg-panel/80 backdrop-blur-xl flex items-center px-3 gap-3 relative z-20">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 pr-3 border-r border-border h-full">
+        <div className="relative w-6 h-6 rounded-md raincast-orb" />
+        <span className="font-display text-lg tracking-tight leading-none">
+          RAIN<span className="italic text-primary">CAST</span>
+        </span>
       </div>
 
-      <div className="text-sm text-muted-foreground truncate max-w-[240px] flex items-center gap-2">
-        {title}
+      {/* Project title + status */}
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="text-sm text-foreground/90 truncate max-w-[240px] font-medium">
+          {title}
+        </div>
+        {isBuilding ? (
+          <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            Building
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            Ready
+          </span>
+        )}
         {isGuest && (
-          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30">
+          <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border">
             Guest
           </span>
         )}
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5">
         <Select value={selectedModel} onValueChange={setModel}>
-          <SelectTrigger className="h-8 w-[220px] bg-secondary border-border text-xs">
+          <SelectTrigger className="h-8 w-[200px] bg-secondary/70 border-border text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -73,9 +89,9 @@ export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
           size="sm"
           variant="ghost"
           onClick={resetProject}
-          className="h-8 gap-1.5"
+          className="h-8 gap-1.5 text-xs"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           New
         </Button>
 
@@ -84,9 +100,9 @@ export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
             size="sm"
             variant="ghost"
             onClick={onOpenProjects}
-            className="h-8 gap-1.5"
+            className="h-8 gap-1.5 text-xs"
           >
-            <FolderOpen className="w-4 h-4" />
+            <FolderOpen className="w-3.5 h-3.5" />
             Projects
           </Button>
         )}
@@ -94,31 +110,30 @@ export function TopBar({ onOpenProjects, userEmail, isGuest }: TopBarProps) {
         {isGuest && (
           <Button
             size="sm"
-            variant="outline"
             onClick={() => {
               disableGuestMode();
               navigate("/auth");
             }}
-            className="h-8 gap-1.5"
+            className="h-8 gap-1.5 text-xs shadow-[var(--shadow-glow)]"
           >
-            <UserRound className="w-4 h-4" />
+            <UserRound className="w-3.5 h-3.5" />
             Sign in to save
           </Button>
         )}
 
-        <div className="h-6 w-px bg-border mx-1" />
+        <div className="h-5 w-px bg-border mx-1" />
 
-        <span className="text-xs text-muted-foreground hidden sm:inline">
+        <span className="text-xs text-muted-foreground hidden md:inline max-w-[140px] truncate">
           {userEmail}
         </span>
         <Button
-          size="sm"
+          size="icon"
           variant="ghost"
           onClick={signOut}
-          className="h-8"
+          className="h-8 w-8"
           title={isGuest ? "Exit guest" : "Sign out"}
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-3.5 h-3.5" />
         </Button>
       </div>
     </header>
