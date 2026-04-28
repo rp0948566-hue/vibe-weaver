@@ -1,12 +1,41 @@
-// Wraps generated JSX in a standalone HTML document for the preview iframe.
+// Wraps generated multi-file JSX into a standalone HTML document for the
+// preview iframe. All files are concatenated (non-entry first, entry last),
+// imports/exports stripped, then handed to Babel Standalone.
 
-export function buildIframeHtml(userCode: string): string {
-  // Strip any stray import/export statements — Babel Standalone doesn't handle them.
-  const cleaned = userCode
+function clean(code: string): string {
+  return code
     .replace(/^\s*import\s+[^;]+;?\s*$/gm, "")
+    .replace(/^\s*import\s+["'][^"']+["']\s*;?\s*$/gm, "")
     .replace(/export\s+default\s+/g, "")
-    .replace(/export\s+\{[^}]*\}\s*;?/g, "");
+    .replace(/export\s+\{[^}]*\}\s*;?/g, "")
+    .replace(/^\s*export\s+(const|let|var|function|class)\s+/gm, "$1 ");
+}
 
+export function buildIframeHtmlFromFiles(
+  files: Record<string, string>,
+  entry: string,
+): string {
+  const ordered: string[] = [];
+  // Non-entry first
+  for (const [path, content] of Object.entries(files)) {
+    if (path === entry) continue;
+    // Only include script-like files in the bundle
+    if (!/\.(jsx?|tsx?)$/.test(path)) continue;
+    ordered.push(`/* ===== ${path} ===== */\n${clean(content)}`);
+  }
+  // Entry last
+  if (files[entry]) {
+    ordered.push(`/* ===== ${entry} (entry) ===== */\n${clean(files[entry])}`);
+  }
+  return wrap(ordered.join("\n\n"));
+}
+
+/** Backwards-compat: single-file builder. */
+export function buildIframeHtml(userCode: string): string {
+  return wrap(clean(userCode));
+}
+
+function wrap(scriptBody: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -38,7 +67,7 @@ export function buildIframeHtml(userCode: string): string {
   </script>
   <script type="text/babel" data-presets="react">
     try {
-      ${cleaned}
+      ${scriptBody}
       const __root = ReactDOM.createRoot(document.getElementById('root'));
       __root.render(React.createElement(App));
       parent.postMessage({ type: 'preview-ready' }, '*');
