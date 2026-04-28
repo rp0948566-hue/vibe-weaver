@@ -188,13 +188,19 @@ export function FileExplorer({
   onOpen,
   onSearch,
   search,
+  recentlyChanged = [],
 }: {
   paths: string[];
   activePath: string | null;
   onOpen: (p: string) => void;
   onSearch: (s: string) => void;
   search: string;
+  recentlyChanged?: string[];
 }) {
+  const recentSet = useMemo(
+    () => new Set(recentlyChanged),
+    [recentlyChanged],
+  );
   const tree = useMemo(() => buildTree(paths), [paths]);
   // Default expand the top-level "src"
   const [expanded, setExpanded] = useState<Set<string>>(() => {
