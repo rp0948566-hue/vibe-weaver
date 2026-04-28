@@ -16,7 +16,7 @@ export interface StreamArgs {
 }
 
 export async function streamAIBuild(args: StreamArgs): Promise<void> {
-  const { messages, model, currentCode, onDelta, onDone, onError, signal } =
+  const { messages, model, currentCode, mode, onDelta, onDone, onError, signal } =
     args;
 
   let resp: Response;
@@ -27,7 +27,7 @@ export async function streamAIBuild(args: StreamArgs): Promise<void> {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, model, currentCode }),
+      body: JSON.stringify({ messages, model, currentCode, mode }),
       signal,
     });
   } catch (e) {
