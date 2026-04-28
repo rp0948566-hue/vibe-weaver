@@ -133,6 +133,7 @@ export function CodeViewer() {
         onOpen={openFile}
         onSearch={setSearch}
         search={search}
+        recentlyChanged={recentlyChanged}
       />
       <div className="flex-1 min-w-0 flex flex-col">
         <FilePathHeader
