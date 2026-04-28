@@ -1,36 +1,133 @@
-// Extracts code from AI streamed responses.
-// Tries fenced code blocks in priority order, falls back to full text.
+// Multi-file extractor for RAINCAST AI responses.
+// Parses fenced code blocks of the form:
+//   ```jsx src/App.jsx
+//   ...code...
+//   ```
+// Plus a special meta block:
+//   ```raincast-meta
+//   { "type": "webapp", "entry": "src/App.jsx" }
+//   ```
 
-const FENCE_ORDER = ["jsx", "tsx", "javascript", "js", "html"];
+export type ProjectType =
+  | "website"
+  | "webapp"
+  | "game"
+  | "mobile-app"
+  | "os/desktop"
+  | "ecommerce"
+  | "api/fullstack"
+  | "unknown";
 
-export function extractCode(raw: string): string {
-  if (!raw) return "";
+export interface ExtractedFiles {
+  files: Record<string, string>;
+  entry: string;
+  type: ProjectType;
+}
 
-  for (const lang of FENCE_ORDER) {
-    const re = new RegExp("```" + lang + "\\s*([\\s\\S]*?)```", "i");
-    const m = raw.match(re);
-    if (m && m[1]) return m[1].trim();
-  }
+const CODE_LANGS = new Set([
+  "jsx",
+  "tsx",
+  "js",
+  "javascript",
+  "ts",
+  "typescript",
+  "css",
+  "html",
+  "json",
+  "md",
+]);
 
-  // Generic fenced block
-  const generic = raw.match(/```[a-zA-Z]*\s*([\s\S]*?)```/);
-  if (generic && generic[1]) return generic[1].trim();
+function extToLang(path: string): string {
+  if (path.endsWith(".tsx")) return "tsx";
+  if (path.endsWith(".jsx")) return "jsx";
+  if (path.endsWith(".ts")) return "typescript";
+  if (path.endsWith(".js")) return "javascript";
+  if (path.endsWith(".css")) return "css";
+  if (path.endsWith(".html")) return "html";
+  if (path.endsWith(".json")) return "json";
+  if (path.endsWith(".md")) return "markdown";
+  return "javascript";
+}
 
-  // Fallback: strip markdown fences if partial
-  return raw.replace(/```[a-zA-Z]*\s*/g, "").replace(/```/g, "").trim();
+export function langForPath(path: string): string {
+  return extToLang(path);
 }
 
 /**
- * Partial extraction for streaming — finds an open code fence and returns
- * everything after it (without waiting for the closing fence).
+ * Parse a (possibly partial / streaming) AI response into a file map.
+ * Recognizes fenced blocks where the fence line includes a path token.
+ * Always returns at least an empty map. Open (unclosed) blocks at the end
+ * are still included with their partial content — useful for streaming UI.
  */
-export function extractPartialCode(raw: string): string | null {
-  if (!raw) return null;
-  const match = raw.match(/```(?:jsx|tsx|javascript|js|html)?\s*\n([\s\S]*)$/i);
-  if (match && match[1]) {
-    // If there's a closing fence further along, strip it
-    const closed = match[1].split(/```/)[0];
-    return closed.trim();
+export function extractFiles(raw: string): ExtractedFiles {
+  const result: ExtractedFiles = {
+    files: {},
+    entry: "src/App.jsx",
+    type: "unknown",
+  };
+  if (!raw) return result;
+
+  // Tokenize by fences.
+  // Regex matches: ```<lang>[ <path>]\n<body>(```|EOF)
+  const re = /```([a-zA-Z0-9_+-]+)?\s*([^\n`]*)\n([\s\S]*?)(?:```|$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) {
+    const lang = (m[1] || "").trim().toLowerCase();
+    const rest = (m[2] || "").trim();
+    const body = m[3] ?? "";
+
+    if (lang === "raincast-meta") {
+      try {
+        const meta = JSON.parse(body.trim());
+        if (typeof meta.type === "string") result.type = meta.type as ProjectType;
+        if (typeof meta.entry === "string") result.entry = meta.entry;
+      } catch {
+        /* partial json — ignore */
+      }
+      continue;
+    }
+
+    if (!CODE_LANGS.has(lang)) continue;
+
+    // Path can be after the lang on the fence line.
+    let path = rest;
+    if (!path) {
+      // No path provided → treat as entry file (legacy single-file mode).
+      path = "src/App.jsx";
+    }
+    // Sanitize path
+    path = path.replace(/^["'`]|["'`]$/g, "").trim();
+    if (!path) path = "src/App.jsx";
+
+    result.files[path] = body.trimEnd();
   }
-  return null;
+
+  // If no entry was specified but we have an obvious one, use it.
+  if (!result.files[result.entry]) {
+    const candidate = Object.keys(result.files).find(
+      (p) => /(^|\/)App\.(jsx|tsx|js)$/.test(p) || /index\.(jsx|tsx|js)$/.test(p),
+    );
+    if (candidate) result.entry = candidate;
+  }
+
+  return result;
+}
+
+/** Backwards-compat: returns the entry file content from a parsed response. */
+export function extractCode(raw: string): string {
+  const { files, entry } = extractFiles(raw);
+  if (files[entry]) return files[entry];
+  // Fallback: first file or generic fenced block
+  const first = Object.values(files)[0];
+  if (first) return first;
+  const generic = raw.match(/```[a-zA-Z]*\s*([\s\S]*?)```/);
+  return generic && generic[1] ? generic[1].trim() : "";
+}
+
+/** Streaming partial extractor — returns the entry file content so far. */
+export function extractPartialCode(raw: string): string | null {
+  const { files, entry } = extractFiles(raw);
+  if (files[entry]) return files[entry];
+  const first = Object.values(files)[0];
+  return first ?? null;
 }

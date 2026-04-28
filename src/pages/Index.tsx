@@ -47,13 +47,13 @@ export default function Index() {
             </div>
           </ResizablePanel>
           <ResizableHandle className="bg-transparent w-1" />
-          <ResizablePanel defaultSize={40} minSize={20} className="px-1">
-            <div className="h-full raincast-panel overflow-hidden">
+          <ResizablePanel defaultSize={45} minSize={25} className="px-1">
+            <div className="h-full raincast-panel overflow-hidden bg-[#111118]">
               <CodeViewer />
             </div>
           </ResizablePanel>
           <ResizableHandle className="bg-transparent w-1" />
-          <ResizablePanel defaultSize={35} minSize={20} className="pl-1">
+          <ResizablePanel defaultSize={30} minSize={20} className="pl-1">
             <PreviewPanel />
           </ResizablePanel>
         </ResizablePanelGroup>
