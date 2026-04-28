@@ -8,6 +8,7 @@ export interface StreamArgs {
   messages: ChatMessage[];
   model: string;
   currentCode?: string;
+  mode?: "build" | "chat" | "plan";
   onDelta: (chunk: string) => void;
   onDone: () => void;
   onError: (err: { status?: number; message: string }) => void;
