@@ -11,6 +11,8 @@ export function PromptInput({ onSend }: PromptInputProps) {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const isBuilding = useRaincastStore((s) => s.isBuilding);
+  const mode = useRaincastStore((s) => s.mode);
+  const isPlan = mode === "plan";
   const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
