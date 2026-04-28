@@ -132,6 +132,10 @@ export const useRaincastStore = create<RaincastState>((set) => ({
     }),
   setDevice: (d) => set({ device: d }),
   setPreviewError: (e) => set({ previewError: e }),
+  setMode: (m) => set({ mode: m }),
+  toggleMode: () =>
+    set((s) => ({ mode: s.mode === "build" ? "plan" : "build" })),
+  setRecentlyChanged: (paths) => set({ recentlyChanged: paths }),
   resetProject: () =>
     set({
       messages: [],
