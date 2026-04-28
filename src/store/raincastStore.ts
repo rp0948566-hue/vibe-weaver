@@ -27,6 +27,8 @@ interface RaincastState {
   activeProjectTitle: string;
   device: Device;
   previewError: string | null;
+  mode: AppMode;
+  recentlyChanged: string[];
 
   setMessages: (m: ChatMessage[]) => void;
   addMessage: (m: ChatMessage) => void;
