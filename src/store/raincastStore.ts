@@ -69,6 +69,8 @@ export const useRaincastStore = create<RaincastState>((set) => ({
   activeProjectTitle: "Untitled",
   device: "desktop",
   previewError: null,
+  mode: "build",
+  recentlyChanged: [],
 
   setMessages: (m) => set({ messages: m }),
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
