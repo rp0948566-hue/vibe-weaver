@@ -72,6 +72,7 @@ export function CodeViewer() {
   const closeTab = useRaincastStore((s) => s.closeTab);
   const setActiveFile = useRaincastStore((s) => s.setActiveFile);
   const projectType = useRaincastStore((s) => s.projectType);
+  const recentlyChanged = useRaincastStore((s) => s.recentlyChanged);
   const { regenerate } = useAIBuild();
   const [search, setSearch] = useState("");
 
