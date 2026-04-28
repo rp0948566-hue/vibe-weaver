@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { messages, model, currentCode } = await req.json();
+    const { messages, model, currentCode, mode } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -228,15 +228,33 @@ Deno.serve(async (req) => {
       );
     }
 
+    // mode: "build" (default) | "chat" | "plan"
+    const requestMode: "build" | "chat" | "plan" =
+      mode === "chat" || mode === "plan" ? mode : "build";
+
+    const baseSystem =
+      requestMode === "chat"
+        ? CHAT_SYSTEM_PROMPT
+        : requestMode === "plan"
+          ? PLAN_SYSTEM_PROMPT
+          : SYSTEM_PROMPT;
+
     const sysMessages: Array<{ role: string; content: string }> = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: baseSystem },
     ];
+
     if (currentCode && typeof currentCode === "string" && currentCode.trim()) {
-      sysMessages.push({
-        role: "system",
-        content: `The current version of the app (concatenated entry file) is:\n\n\`\`\`jsx\n${currentCode}\n\`\`\`\n\nWhen the user requests a change, return the FULL updated multi-file set in the multi-file format.`,
-      });
+      const ctxNote =
+        requestMode === "build"
+          ? `The current version of the app (concatenated entry file) is:\n\n\`\`\`jsx\n${currentCode}\n\`\`\`\n\nWhen the user requests a change, return the FULL updated multi-file set in the multi-file format. NEVER emit empty files. Re-emit unchanged files verbatim.`
+          : `For context, the user's current app entry file is:\n\n\`\`\`jsx\n${currentCode}\n\`\`\`\n\nUse this only to inform your reply. Do NOT emit code.`;
+      sysMessages.push({ role: "system", content: ctxNote });
     }
+
+    // Trim history to last 12 messages so context stays focused.
+    const trimmedMessages = Array.isArray(messages)
+      ? messages.slice(-12)
+      : [];
 
     const chosenModel =
       typeof model === "string" && model.length > 0
