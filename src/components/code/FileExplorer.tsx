@@ -248,6 +248,7 @@ export function FileExplorer({
               activePath={activePath}
               onOpen={onOpen}
               filter={search}
+              recentlyChanged={recentSet}
             />
           ))
         )}
