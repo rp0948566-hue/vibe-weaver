@@ -54,16 +54,25 @@ export function PromptInput({ onSend }: PromptInputProps) {
     <div className="border-t border-border p-3 bg-panel">
       <div
         className={cn(
-          "relative rounded-xl border bg-background/80 backdrop-blur transition-all",
+          "relative rounded-xl border bg-background/80 backdrop-blur transition-all duration-300",
           focused
-            ? "border-primary/60 shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]"
-            : "border-border hover:border-border/80",
+            ? isPlan
+              ? "border-purple-500/70 shadow-[0_0_0_3px_rgba(139,92,246,0.18)]"
+              : "border-primary/60 shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]"
+            : isPlan
+              ? "border-purple-500/40 hover:border-purple-500/60"
+              : "border-border hover:border-border/80",
         )}
       >
         <div className="flex items-center gap-1.5 px-3 pt-2.5">
-          <Sparkles className="w-3 h-3 text-primary" />
+          <Sparkles
+            className={cn(
+              "w-3 h-3 transition-colors",
+              isPlan ? "text-purple-400" : "text-primary",
+            )}
+          />
           <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Prompt
+            {isPlan ? "Plan" : "Prompt"}
           </span>
           <div className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
             <span className="raincast-kbd">⌘</span>
@@ -79,7 +88,11 @@ export function PromptInput({ onSend }: PromptInputProps) {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           rows={2}
-          placeholder="Describe the app you want to build…"
+          placeholder={
+            isPlan
+              ? "Discuss your idea... (Shift+Tab to Build Mode)"
+              : "Describe what to build... (Shift+Tab for Plan Mode)"
+          }
           className="w-full resize-none bg-transparent px-3 py-2 pr-14 text-[13px] leading-relaxed outline-none placeholder:text-muted-foreground/70 min-h-[52px] max-h-[180px]"
           disabled={isBuilding}
         />
@@ -88,7 +101,7 @@ export function PromptInput({ onSend }: PromptInputProps) {
             <kbd className="raincast-kbd">Enter</kbd>
             <span className="mx-1.5">to send</span>
             <kbd className="raincast-kbd">⇧ Enter</kbd>
-            <span className="ml-1.5">for new line</span>
+            <span className="ml-1.5">new line</span>
           </span>
           <button
             onClick={submit}
@@ -97,7 +110,9 @@ export function PromptInput({ onSend }: PromptInputProps) {
             className={cn(
               "h-7 w-7 rounded-md flex items-center justify-center transition-all",
               canSend
-                ? "bg-primary text-primary-foreground hover:brightness-110 shadow-[var(--shadow-glow)]"
+                ? isPlan
+                  ? "bg-purple-500 text-white hover:brightness-110 shadow-[0_0_18px_-4px_rgba(139,92,246,0.7)]"
+                  : "bg-primary text-primary-foreground hover:brightness-110 shadow-[var(--shadow-glow)]"
                 : "bg-secondary text-muted-foreground cursor-not-allowed",
             )}
           >
