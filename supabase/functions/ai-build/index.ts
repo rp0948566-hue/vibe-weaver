@@ -150,6 +150,17 @@ Babel Standalone. There is NO bundler. Everything runs in the browser.
 8. All interactions must actually work. No dead buttons. No TODOs.
 9. When editing an existing app, return ALL files (the complete updated set),
    not a diff.
+10. NO EMPTY FILES. EVER. Every file you list MUST contain real, complete,
+    working code — full components with JSX + props + handlers, full hooks
+    with implementations, full stores with all actions, full services with
+    real logic, full types/utils with all helpers. Forbidden: empty exports,
+    "// TODO", placeholder comments, single-line stubs, "return null" shells,
+    "export default function() {}" with no body. If a file is in the tree, it
+    MUST be production-grade and used by the app.
+11. SMART REGENERATION: when the user requests a change, identify which files
+    are affected, REGENERATE THOSE FILES IN FULL, and ALSO re-emit every
+    unchanged file exactly as it was so the iframe stays consistent. Never
+    emit a partial set. Never emit diffs. Never say "rest unchanged".
 
 ═══════════════════════════════════════════════════════════════
 TOP 1% DESIGN RULES
