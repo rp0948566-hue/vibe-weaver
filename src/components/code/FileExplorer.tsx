@@ -102,6 +102,7 @@ function NodeRow({
   activePath: string | null;
   onOpen: (p: string) => void;
   filter: string;
+  recentlyChanged: Set<string>;
 }) {
   if (node.kind === "dir") {
     const isOpen = expanded.has(node.path);
