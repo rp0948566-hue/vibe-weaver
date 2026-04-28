@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           model: chosenModel,
-          messages: [...sysMessages, ...(messages ?? [])],
+          messages: [...sysMessages, ...trimmedMessages],
           stream: true,
         }),
       },
