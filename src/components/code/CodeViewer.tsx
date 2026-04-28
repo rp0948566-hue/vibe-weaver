@@ -1,29 +1,118 @@
-import Editor from "@monaco-editor/react";
-import { Code2, Copy, Download, RefreshCw, FileCode } from "lucide-react";
+import Editor, { type Monaco } from "@monaco-editor/react";
+import { useEffect, useState } from "react";
 import JSZip from "jszip";
-import { Button } from "@/components/ui/button";
 import { useRaincastStore } from "@/store/raincastStore";
 import { useAIBuild } from "@/hooks/useAIBuild";
+import { langForPath } from "@/services/codeExtractor";
+import {
+  FileExplorer,
+  FileTabs,
+  FilePathHeader,
+} from "@/components/code/FileExplorer";
 import { toast } from "sonner";
 
-export function CodeViewer() {
-  const code = useRaincastStore((s) => s.currentCode);
-  const isBuilding = useRaincastStore((s) => s.isBuilding);
-  const { regenerate } = useAIBuild();
+// Custom Monaco theme matching the spec.
+function defineRaincastTheme(monaco: Monaco) {
+  monaco.editor.defineTheme("raincast-dark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [
+      { token: "comment", foreground: "546e7a", fontStyle: "italic" },
+      { token: "keyword", foreground: "c792ea" },
+      { token: "keyword.control", foreground: "c792ea" },
+      { token: "string", foreground: "f78c6c" },
+      { token: "string.quote", foreground: "f78c6c" },
+      { token: "number", foreground: "f78c6c" },
+      { token: "type", foreground: "82aaff" },
+      { token: "type.identifier", foreground: "82aaff" },
+      { token: "identifier", foreground: "c0c0d8" },
+      { token: "tag", foreground: "89ddff" },
+      { token: "tag.html", foreground: "89ddff" },
+      { token: "delimiter.html", foreground: "89ddff" },
+      { token: "attribute.name", foreground: "ffcb6b" },
+      { token: "attribute.name.html", foreground: "ffcb6b" },
+      { token: "attribute.value", foreground: "f78c6c" },
+      { token: "metatag", foreground: "89ddff" },
+      { token: "metatag.content.html", foreground: "f78c6c" },
+      { token: "regexp", foreground: "f78c6c" },
+      { token: "function", foreground: "82aaff" },
+      { token: "variable", foreground: "c0c0d8" },
+      { token: "variable.predefined", foreground: "82aaff" },
+      { token: "variable.parameter", foreground: "ffcb6b" },
+    ],
+    colors: {
+      "editor.background": "#111118",
+      "editor.foreground": "#c0c0d8",
+      "editorLineNumber.foreground": "#3a3a52",
+      "editorLineNumber.activeForeground": "#8080a0",
+      "editor.lineHighlightBackground": "#ffffff08",
+      "editor.lineHighlightBorder": "#00000000",
+      "editorCursor.foreground": "#00e5ff",
+      "editor.selectionBackground": "#00e5ff22",
+      "editor.inactiveSelectionBackground": "#ffffff10",
+      "editorWidget.background": "#1a1a24",
+      "editorWidget.border": "#1e1e2e",
+      "editorIndentGuide.background": "#1e1e2e",
+      "editorIndentGuide.activeBackground": "#2a2a3a",
+      "scrollbar.shadow": "#00000000",
+      "scrollbarSlider.background": "#00000000",
+      "scrollbarSlider.hoverBackground": "#00000000",
+      "scrollbarSlider.activeBackground": "#00000000",
+    },
+  });
+  monaco.editor.setTheme("raincast-dark");
+}
 
-  const copy = async () => {
-    if (!code) return;
-    await navigator.clipboard.writeText(code);
-    toast.success("Code copied");
+export function CodeViewer() {
+  const files = useRaincastStore((s) => s.files);
+  const openTabs = useRaincastStore((s) => s.openTabs);
+  const activeFile = useRaincastStore((s) => s.activeFile);
+  const isBuilding = useRaincastStore((s) => s.isBuilding);
+  const openFile = useRaincastStore((s) => s.openFile);
+  const closeTab = useRaincastStore((s) => s.closeTab);
+  const setActiveFile = useRaincastStore((s) => s.setActiveFile);
+  const projectType = useRaincastStore((s) => s.projectType);
+  const { regenerate } = useAIBuild();
+  const [search, setSearch] = useState("");
+
+  const paths = Object.keys(files);
+  const currentPath = activeFile ?? openTabs[0] ?? null;
+  const currentContent = currentPath ? files[currentPath] ?? "" : "";
+
+  // Auto-scroll to bottom while streaming, top when build finishes.
+  const [editorInstance, setEditorInstance] = useState<unknown | null>(null);
+  useEffect(() => {
+    if (!editorInstance || !currentPath) return;
+    const ed = editorInstance as {
+      getModel: () => { getLineCount: () => number } | null;
+      revealLine: (n: number) => void;
+      setPosition: (p: { lineNumber: number; column: number }) => void;
+    };
+    const model = ed.getModel();
+    if (!model) return;
+    if (isBuilding) {
+      ed.revealLine(model.getLineCount());
+    } else {
+      ed.revealLine(1);
+      ed.setPosition({ lineNumber: 1, column: 1 });
+    }
+  }, [currentContent, isBuilding, editorInstance, currentPath]);
+
+  const copyCurrent = async () => {
+    if (!currentPath) return;
+    await navigator.clipboard.writeText(currentContent);
+    toast.success(`Copied ${currentPath.split("/").pop()}`);
   };
 
-  const download = async () => {
-    if (!code) return;
+  const downloadZip = async () => {
+    if (paths.length === 0) return;
     const zip = new JSZip();
-    zip.file("App.jsx", code);
+    for (const p of paths) zip.file(p, files[p]);
     zip.file(
       "README.md",
-      "# Generated by RAINCAST\n\nThis is a single-file React component. Open in any React project.\n",
+      `# Generated by RAINCAST\n\nProject type: ${projectType}\n\nFiles:\n${paths
+        .map((p) => `- ${p}`)
+        .join("\n")}\n`,
     );
     const blob = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(blob);
@@ -36,80 +125,88 @@ export function CodeViewer() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-panel">
-      <div className="h-9 shrink-0 px-3 flex items-center border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-medium">
-        <Code2 className="w-3.5 h-3.5 mr-2 text-primary" />
-        Code
-        <span className="ml-2 normal-case tracking-normal text-foreground/70 flex items-center gap-1">
-          <FileCode className="w-3 h-3" /> App.jsx
-        </span>
-        <div className="ml-auto flex gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
-            onClick={regenerate}
-            disabled={isBuilding || !code}
-          >
-            <RefreshCw className="w-3.5 h-3.5 mr-1" />
-            Regenerate
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
-            onClick={copy}
-            disabled={!code}
-          >
-            <Copy className="w-3.5 h-3.5 mr-1" />
-            Copy
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
-            onClick={download}
-            disabled={!code}
-          >
-            <Download className="w-3.5 h-3.5 mr-1" />
-            .zip
-          </Button>
+    <div className="flex h-full bg-[#111118] overflow-hidden">
+      <FileExplorer
+        paths={paths}
+        activePath={currentPath}
+        onOpen={openFile}
+        onSearch={setSearch}
+        search={search}
+      />
+      <div className="flex-1 min-w-0 flex flex-col">
+        <FilePathHeader
+          path={currentPath}
+          onCopy={copyCurrent}
+          onDownload={downloadZip}
+          onRegenerate={regenerate}
+          canAct={paths.length > 0}
+          isBuilding={isBuilding}
+        />
+        <FileTabs
+          tabs={openTabs}
+          active={currentPath}
+          onSelect={setActiveFile}
+          onClose={closeTab}
+        />
+        <div className="flex-1 min-h-0 bg-[#111118]">
+          {currentPath ? (
+            <Editor
+              key={currentPath}
+              height="100%"
+              path={currentPath}
+              language={langForPath(currentPath)}
+              value={currentContent}
+              theme="raincast-dark"
+              beforeMount={defineRaincastTheme}
+              onMount={(ed) => setEditorInstance(ed)}
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                fontFamily:
+                  "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, monospace",
+                fontSize: 13,
+                lineHeight: 1.6 * 13,
+                lineNumbers: "on",
+                scrollBeyondLastLine: false,
+                wordWrap: "off",
+                padding: { top: 14, bottom: 14 },
+                smoothScrolling: true,
+                cursorSmoothCaretAnimation: "on",
+                cursorBlinking: "smooth",
+                renderLineHighlight: "all",
+                scrollbar: {
+                  vertical: "hidden",
+                  horizontal: "hidden",
+                  alwaysConsumeMouseWheel: false,
+                  handleMouseWheel: true,
+                },
+                overviewRulerLanes: 0,
+                guides: { indentation: true, highlightActiveIndentation: true },
+                renderWhitespace: "none",
+                contextmenu: false,
+                folding: false,
+              }}
+            />
+          ) : (
+            <EmptyCodeState />
+          )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="flex-1 min-h-0">
-        {code ? (
-          <Editor
-            height="100%"
-            defaultLanguage="javascript"
-            language="javascript"
-            value={code}
-            theme="vs-dark"
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              fontFamily: "JetBrains Mono, ui-monospace, monospace",
-              fontSize: 13,
-              lineNumbers: "on",
-              scrollBeyondLastLine: false,
-              wordWrap: "on",
-              padding: { top: 12, bottom: 12 },
-              smoothScrolling: true,
-              renderLineHighlight: "none",
-            }}
-          />
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center px-6">
-            <div className="font-mono text-[10px] text-muted-foreground/60 mb-3 tracking-[0.2em] uppercase">
-              const App = () =&gt; …
-            </div>
-            <p className="font-display text-2xl text-foreground mb-1">Code</p>
-            <p className="text-xs text-muted-foreground max-w-[260px]">
-              Your generated source will stream here character by character.
-            </p>
-          </div>
-        )}
+function EmptyCodeState() {
+  return (
+    <div className="h-full flex flex-col items-center justify-center text-center px-6">
+      <div className="font-mono text-[10px] text-[#5a5a75] mb-3 tracking-[0.2em] uppercase">
+        const App = () =&gt; …
       </div>
+      <p className="font-display text-2xl text-[#c0c0d8] mb-1">Code</p>
+      <p className="text-xs text-[#6b6b85] max-w-[280px]">
+        Your generated source will stream here, organized into a clean folder
+        structure based on what you're building.
+      </p>
     </div>
   );
 }
