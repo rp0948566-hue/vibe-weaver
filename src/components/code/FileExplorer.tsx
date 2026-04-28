@@ -94,6 +94,7 @@ function NodeRow({
   activePath,
   onOpen,
   filter,
+  recentlyChanged,
 }: {
   node: FileNode;
   depth: number;
