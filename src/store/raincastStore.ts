@@ -8,6 +8,7 @@ export type ChatMessage = {
 };
 
 export type Device = "desktop" | "tablet" | "mobile";
+export type AppMode = "build" | "plan";
 
 interface RaincastState {
   messages: ChatMessage[];
