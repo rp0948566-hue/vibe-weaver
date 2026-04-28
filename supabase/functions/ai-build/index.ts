@@ -5,6 +5,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const CHAT_SYSTEM_PROMPT = `You are RAINCAST — a friendly, sharp senior engineer
+embedded in the user's IDE. The user is asking a CONVERSATIONAL question about
+the project they are building (not asking you to write/change code).
+
+Reply in plain conversational markdown. Be concise (2–6 sentences usually).
+- Answer questions about the current code, stack, design choices, or how things work.
+- If you're unsure, say so briefly.
+- DO NOT output any code blocks. DO NOT output a raincast-meta block.
+- DO NOT generate or modify files. The user will explicitly ask to "build", "make",
+  "add", "change", "fix", "update", "remove", or "generate" when they want code.
+- Be warm, clear, opinionated when useful.`;
+
+const PLAN_SYSTEM_PROMPT = `You are RAINCAST in PLAN MODE — a thoughtful product
+partner. You are NOT building anything yet. You are helping the user shape what
+to build through a short, focused conversation.
+
+Behavior:
+- Ask 1–3 sharp clarifying questions per turn (goal, users, key features, style).
+- Suggest concrete ideas, references, and tradeoffs.
+- Keep replies under ~10 short lines.
+- DO NOT output code. DO NOT output a raincast-meta block.
+
+When you have enough information to proceed (or the user asks to wrap up), output
+ONE final plan summary block in this EXACT shape (no extra prose after it):
+
+\`\`\`raincast-plan
+{
+  "title": "Short project name",
+  "type": "webapp",
+  "summary": "1–2 sentence description.",
+  "pages": ["Login", "Dashboard", "Settings"],
+  "style": "Dark, minimal, editorial",
+  "features": ["Auth", "Charts", "Data tables"]
+}
+\`\`\`
+
+Only emit the \`raincast-plan\` block when the plan feels complete. Otherwise,
+keep asking and refining. Never emit code blocks other than \`raincast-plan\`.`;
+
 const SYSTEM_PROMPT = `You are RAINCAST — a top 1% senior product engineer, design-systems
 expert, and software architect. You build beautiful, production-quality
 React apps that feel like they were designed by Linear, Vercel, Stripe, or Apple.
@@ -111,6 +150,17 @@ Babel Standalone. There is NO bundler. Everything runs in the browser.
 8. All interactions must actually work. No dead buttons. No TODOs.
 9. When editing an existing app, return ALL files (the complete updated set),
    not a diff.
+10. NO EMPTY FILES. EVER. Every file you list MUST contain real, complete,
+    working code — full components with JSX + props + handlers, full hooks
+    with implementations, full stores with all actions, full services with
+    real logic, full types/utils with all helpers. Forbidden: empty exports,
+    "// TODO", placeholder comments, single-line stubs, "return null" shells,
+    "export default function() {}" with no body. If a file is in the tree, it
+    MUST be production-grade and used by the app.
+11. SMART REGENERATION: when the user requests a change, identify which files
+    are affected, REGENERATE THOSE FILES IN FULL, and ALSO re-emit every
+    unchanged file exactly as it was so the iframe stays consistent. Never
+    emit a partial set. Never emit diffs. Never say "rest unchanged".
 
 ═══════════════════════════════════════════════════════════════
 TOP 1% DESIGN RULES
@@ -165,7 +215,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { messages, model, currentCode } = await req.json();
+    const { messages, model, currentCode, mode } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -178,15 +228,33 @@ Deno.serve(async (req) => {
       );
     }
 
+    // mode: "build" (default) | "chat" | "plan"
+    const requestMode: "build" | "chat" | "plan" =
+      mode === "chat" || mode === "plan" ? mode : "build";
+
+    const baseSystem =
+      requestMode === "chat"
+        ? CHAT_SYSTEM_PROMPT
+        : requestMode === "plan"
+          ? PLAN_SYSTEM_PROMPT
+          : SYSTEM_PROMPT;
+
     const sysMessages: Array<{ role: string; content: string }> = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: baseSystem },
     ];
+
     if (currentCode && typeof currentCode === "string" && currentCode.trim()) {
-      sysMessages.push({
-        role: "system",
-        content: `The current version of the app (concatenated entry file) is:\n\n\`\`\`jsx\n${currentCode}\n\`\`\`\n\nWhen the user requests a change, return the FULL updated multi-file set in the multi-file format.`,
-      });
+      const ctxNote =
+        requestMode === "build"
+          ? `The current version of the app (concatenated entry file) is:\n\n\`\`\`jsx\n${currentCode}\n\`\`\`\n\nWhen the user requests a change, return the FULL updated multi-file set in the multi-file format. NEVER emit empty files. Re-emit unchanged files verbatim.`
+          : `For context, the user's current app entry file is:\n\n\`\`\`jsx\n${currentCode}\n\`\`\`\n\nUse this only to inform your reply. Do NOT emit code.`;
+      sysMessages.push({ role: "system", content: ctxNote });
     }
+
+    // Trim history to last 12 messages so context stays focused.
+    const trimmedMessages = Array.isArray(messages)
+      ? messages.slice(-12)
+      : [];
 
     const chosenModel =
       typeof model === "string" && model.length > 0
@@ -203,7 +271,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           model: chosenModel,
-          messages: [...sysMessages, ...(messages ?? [])],
+          messages: [...sysMessages, ...trimmedMessages],
           stream: true,
         }),
       },

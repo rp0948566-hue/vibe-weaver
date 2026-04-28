@@ -8,6 +8,7 @@ export type ChatMessage = {
 };
 
 export type Device = "desktop" | "tablet" | "mobile";
+export type AppMode = "build" | "plan";
 
 interface RaincastState {
   messages: ChatMessage[];
@@ -26,6 +27,8 @@ interface RaincastState {
   activeProjectTitle: string;
   device: Device;
   previewError: string | null;
+  mode: AppMode;
+  recentlyChanged: string[];
 
   setMessages: (m: ChatMessage[]) => void;
   addMessage: (m: ChatMessage) => void;
@@ -45,6 +48,9 @@ interface RaincastState {
   setActiveProject: (id: string | null, title?: string) => void;
   setDevice: (d: Device) => void;
   setPreviewError: (e: string | null) => void;
+  setMode: (m: AppMode) => void;
+  toggleMode: () => void;
+  setRecentlyChanged: (paths: string[]) => void;
   resetProject: () => void;
 }
 
@@ -63,6 +69,8 @@ export const useRaincastStore = create<RaincastState>((set) => ({
   activeProjectTitle: "Untitled",
   device: "desktop",
   previewError: null,
+  mode: "build",
+  recentlyChanged: [],
 
   setMessages: (m) => set({ messages: m }),
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
@@ -124,6 +132,10 @@ export const useRaincastStore = create<RaincastState>((set) => ({
     }),
   setDevice: (d) => set({ device: d }),
   setPreviewError: (e) => set({ previewError: e }),
+  setMode: (m) => set({ mode: m }),
+  toggleMode: () =>
+    set((s) => ({ mode: s.mode === "build" ? "plan" : "build" })),
+  setRecentlyChanged: (paths) => set({ recentlyChanged: paths }),
   resetProject: () =>
     set({
       messages: [],

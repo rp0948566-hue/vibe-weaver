@@ -6,6 +6,55 @@ import { extractFiles } from "@/services/codeExtractor";
 import { buildIframeHtmlFromFiles } from "@/services/iframeBuilder";
 import { toast } from "sonner";
 
+const BUILD_KEYWORDS = [
+  "build",
+  "make",
+  "create",
+  "add",
+  "change",
+  "fix",
+  "update",
+  "remove",
+  "delete",
+  "generate",
+  "implement",
+  "refactor",
+  "redesign",
+  "rebuild",
+  "regenerate",
+  "replace",
+  "include",
+  "improve",
+  "convert",
+  "turn into",
+  "swap",
+  "rename",
+];
+
+const PLAN_BUILD_TRIGGERS = [
+  "build it",
+  "build this",
+  "let's build",
+  "lets build",
+  "go ahead",
+  "start building",
+  "ship it",
+  "do it",
+  "make it",
+];
+
+function isBuildRequest(text: string): boolean {
+  const t = text.toLowerCase();
+  return BUILD_KEYWORDS.some(
+    (k) => t === k || t.startsWith(k + " ") || t.includes(" " + k + " "),
+  );
+}
+
+function isPlanBuildTrigger(text: string): boolean {
+  const t = text.toLowerCase().trim();
+  return PLAN_BUILD_TRIGGERS.some((k) => t === k || t.startsWith(k));
+}
+
 export function useAIBuild() {
   const store = useRaincastStore();
 
@@ -33,10 +82,38 @@ export function useAIBuild() {
     async (prompt: string) => {
       if (!prompt.trim() || store.isBuilding) return;
 
+      const state = useRaincastStore.getState();
+      const currentMode = state.mode;
+      const hasFiles = Object.keys(state.files).length > 0;
+
+      // Decide effective request mode
+      let requestMode: "build" | "chat" | "plan" = "build";
+      if (currentMode === "plan") {
+        // Plan mode: trigger build if user explicitly says so
+        if (isPlanBuildTrigger(prompt)) {
+          requestMode = "build";
+          state.setMode("build");
+        } else {
+          requestMode = "plan";
+        }
+      } else {
+        // Build mode: chat vs build heuristic. Only treat as chat if we have
+        // an existing project and the message clearly isn't a build request.
+        if (hasFiles && !isBuildRequest(prompt)) {
+          requestMode = "chat";
+        } else {
+          requestMode = "build";
+        }
+      }
+
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData.user?.id ?? null;
-      // Guest mode: no userId → skip persistence but still run the build
-      const projectId = userId ? await ensureProject(userId, prompt) : null;
+      const projectId =
+        userId && requestMode === "build"
+          ? await ensureProject(userId, prompt)
+          : userId
+            ? state.activeProjectId
+            : null;
 
       const userMsg = {
         id: crypto.randomUUID(),
@@ -68,64 +145,82 @@ export function useAIBuild() {
           });
       }
 
+      // Send only the last 10 messages for context (excluding the empty assistant)
       const history: ChatMessage[] = useRaincastStore
         .getState()
         .messages.filter((m) => m.id !== asstId)
+        .slice(-10)
         .map((m) => ({ role: m.role, content: m.content }));
 
       let accumulated = "";
+      const previousFiles = { ...state.files };
 
       await streamAIBuild({
         messages: history,
         model: store.selectedModel,
-        currentCode: store.currentCode || undefined,
+        currentCode: requestMode === "build" ? store.currentCode || undefined : store.currentCode || undefined,
+        mode: requestMode,
         onDelta: (chunk) => {
           accumulated += chunk;
-          useRaincastStore
-            .getState()
-            .updateAssistantMessage(asstId, accumulated);
-          const { files, entry, type } = extractFiles(accumulated);
-          if (Object.keys(files).length > 0) {
-            useRaincastStore.getState().setFiles(files, entry, type);
+          useRaincastStore.getState().updateAssistantMessage(asstId, accumulated);
+          if (requestMode === "build") {
+            const { files, entry, type } = extractFiles(accumulated);
+            if (Object.keys(files).length > 0) {
+              useRaincastStore.getState().setFiles(files, entry, type);
+            }
           }
         },
         onDone: () => {
-          const { files, entry, type } = extractFiles(accumulated);
-          const finalCode = files[entry] ?? Object.values(files)[0] ?? "";
-          if (finalCode && Object.keys(files).length > 0) {
-            useRaincastStore.getState().setFiles(files, entry, type);
-            useRaincastStore
-              .getState()
-              .setPreviewHtml(buildIframeHtmlFromFiles(files, entry));
+          if (requestMode === "build") {
+            const { files, entry, type } = extractFiles(accumulated);
+            const finalCode = files[entry] ?? Object.values(files)[0] ?? "";
+            if (finalCode && Object.keys(files).length > 0) {
+              useRaincastStore.getState().setFiles(files, entry, type);
+              useRaincastStore
+                .getState()
+                .setPreviewHtml(buildIframeHtmlFromFiles(files, entry));
 
-            if (userId && projectId) {
-              supabase
-                .from("messages")
-                .insert({
-                  project_id: projectId,
-                  user_id: userId,
-                  role: "assistant",
-                  content: accumulated,
-                })
-                .then(({ error }) => {
-                  if (error) console.warn("persist assistant msg", error);
-                });
-              supabase
-                .from("builds")
-                .insert({
-                  project_id: projectId,
-                  user_id: userId,
-                  code: finalCode,
-                  model: store.selectedModel,
-                })
-                .then(({ error }) => {
-                  if (error) console.warn("persist build", error);
-                });
+              // Track which files changed
+              const changed = Object.keys(files).filter(
+                (p) => previousFiles[p] !== files[p],
+              );
+              useRaincastStore.getState().setRecentlyChanged(changed);
+              window.setTimeout(() => {
+                useRaincastStore.getState().setRecentlyChanged([]);
+              }, 4000);
+
+              if (userId && projectId) {
+                supabase
+                  .from("messages")
+                  .insert({
+                    project_id: projectId,
+                    user_id: userId,
+                    role: "assistant",
+                    content: accumulated,
+                  })
+                  .then(({ error }) => {
+                    if (error) console.warn("persist assistant msg", error);
+                  });
+                supabase
+                  .from("builds")
+                  .insert({
+                    project_id: projectId,
+                    user_id: userId,
+                    code: finalCode,
+                    model: store.selectedModel,
+                  })
+                  .then(({ error }) => {
+                    if (error) console.warn("persist build", error);
+                  });
+              }
+              toast.success("Build ready");
+            } else {
+              toast.error("AI didn't return any code. Try again.");
             }
-            toast.success("Build ready");
-          } else {
-            toast.error("AI didn't return any code. Try again.");
+          } else if (requestMode === "plan") {
+            toast.success("Plan updated");
           }
+          // chat: nothing extra to do
           useRaincastStore.getState().setBuilding(false);
         },
         onError: (e) => {
@@ -141,21 +236,28 @@ export function useAIBuild() {
   );
 
   const regenerate = useCallback(async () => {
-    // Re-send the last user message
     const msgs = useRaincastStore.getState().messages;
     const lastUser = [...msgs].reverse().find((m) => m.role === "user");
     if (!lastUser) {
       toast.error("Nothing to regenerate");
       return;
     }
-    // Remove the last assistant message
     const filtered = msgs.filter(
-      (m, i) =>
-        !(m.role === "assistant" && i === msgs.length - 1),
+      (m, i) => !(m.role === "assistant" && i === msgs.length - 1),
     );
     useRaincastStore.getState().setMessages(filtered);
     await send(lastUser.content);
   }, [send]);
 
-  return { send, regenerate };
+  const buildFromPlan = useCallback(
+    async (planSummary: string) => {
+      // Switch to build mode and send a directive
+      useRaincastStore.getState().setMode("build");
+      const prompt = `Build the project based on this agreed plan:\n\n${planSummary}\n\nGenerate the complete multi-file project now.`;
+      await send(prompt);
+    },
+    [send],
+  );
+
+  return { send, regenerate, buildFromPlan };
 }

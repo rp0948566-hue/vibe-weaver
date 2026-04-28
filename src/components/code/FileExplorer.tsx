@@ -94,6 +94,7 @@ function NodeRow({
   activePath,
   onOpen,
   filter,
+  recentlyChanged,
 }: {
   node: FileNode;
   depth: number;
@@ -102,6 +103,7 @@ function NodeRow({
   activePath: string | null;
   onOpen: (p: string) => void;
   filter: string;
+  recentlyChanged: Set<string>;
 }) {
   if (node.kind === "dir") {
     const isOpen = expanded.has(node.path);
@@ -142,6 +144,7 @@ function NodeRow({
                 activePath={activePath}
                 onOpen={onOpen}
                 filter={filter}
+                recentlyChanged={recentlyChanged}
               />
             ))}
           </div>
@@ -152,19 +155,24 @@ function NodeRow({
   if (filter && !node.name.toLowerCase().includes(filter.toLowerCase()))
     return null;
   const active = activePath === node.path;
+  const changed = recentlyChanged.has(node.path);
   return (
     <button
       onClick={() => onOpen(node.path)}
       className={cn(
-        "w-full flex items-center gap-1.5 px-2 py-1 text-[12px] select-none transition-colors",
+        "w-full flex items-center gap-1.5 px-2 py-1 text-[12px] select-none transition-colors relative",
         active
           ? "bg-[#2a2a3a] text-white"
           : "text-[#8080a0] hover:bg-white/[0.03] hover:text-[#c0c0d0]",
+        changed && "text-emerald-300",
       )}
       style={{ paddingLeft: 8 + depth * 16 + 14 }}
     >
       <FileIcon name={node.name} />
       <span className="truncate">{node.name}</span>
+      {changed && (
+        <span className="ml-auto mr-1 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgb(52,211,153)] animate-pulse" />
+      )}
     </button>
   );
 }
@@ -180,13 +188,19 @@ export function FileExplorer({
   onOpen,
   onSearch,
   search,
+  recentlyChanged = [],
 }: {
   paths: string[];
   activePath: string | null;
   onOpen: (p: string) => void;
   onSearch: (s: string) => void;
   search: string;
+  recentlyChanged?: string[];
 }) {
+  const recentSet = useMemo(
+    () => new Set(recentlyChanged),
+    [recentlyChanged],
+  );
   const tree = useMemo(() => buildTree(paths), [paths]);
   // Default expand the top-level "src"
   const [expanded, setExpanded] = useState<Set<string>>(() => {
@@ -234,6 +248,7 @@ export function FileExplorer({
               activePath={activePath}
               onOpen={onOpen}
               filter={search}
+              recentlyChanged={recentSet}
             />
           ))
         )}

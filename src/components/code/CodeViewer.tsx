@@ -72,6 +72,7 @@ export function CodeViewer() {
   const closeTab = useRaincastStore((s) => s.closeTab);
   const setActiveFile = useRaincastStore((s) => s.setActiveFile);
   const projectType = useRaincastStore((s) => s.projectType);
+  const recentlyChanged = useRaincastStore((s) => s.recentlyChanged);
   const { regenerate } = useAIBuild();
   const [search, setSearch] = useState("");
 
@@ -132,6 +133,7 @@ export function CodeViewer() {
         onOpen={openFile}
         onSearch={setSearch}
         search={search}
+        recentlyChanged={recentlyChanged}
       />
       <div className="flex-1 min-w-0 flex flex-col">
         <FilePathHeader
