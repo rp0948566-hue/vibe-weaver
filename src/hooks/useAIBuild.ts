@@ -2,8 +2,8 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRaincastStore } from "@/store/raincastStore";
 import { streamAIBuild, type ChatMessage } from "@/services/aiRouter";
-import { extractCode, extractPartialCode } from "@/services/codeExtractor";
-import { buildIframeHtml } from "@/services/iframeBuilder";
+import { extractFiles } from "@/services/codeExtractor";
+import { buildIframeHtmlFromFiles } from "@/services/iframeBuilder";
 import { toast } from "sonner";
 
 export function useAIBuild() {
@@ -84,18 +84,19 @@ export function useAIBuild() {
           useRaincastStore
             .getState()
             .updateAssistantMessage(asstId, accumulated);
-          const partial = extractPartialCode(accumulated);
-          if (partial && partial.length > 40) {
-            useRaincastStore.getState().setCode(partial);
+          const { files, entry, type } = extractFiles(accumulated);
+          if (Object.keys(files).length > 0) {
+            useRaincastStore.getState().setFiles(files, entry, type);
           }
         },
         onDone: () => {
-          const finalCode = extractCode(accumulated);
-          if (finalCode) {
-            useRaincastStore.getState().setCode(finalCode);
+          const { files, entry, type } = extractFiles(accumulated);
+          const finalCode = files[entry] ?? Object.values(files)[0] ?? "";
+          if (finalCode && Object.keys(files).length > 0) {
+            useRaincastStore.getState().setFiles(files, entry, type);
             useRaincastStore
               .getState()
-              .setPreviewHtml(buildIframeHtml(finalCode));
+              .setPreviewHtml(buildIframeHtmlFromFiles(files, entry));
 
             if (userId && projectId) {
               supabase
