@@ -48,6 +48,9 @@ interface RaincastState {
   setActiveProject: (id: string | null, title?: string) => void;
   setDevice: (d: Device) => void;
   setPreviewError: (e: string | null) => void;
+  setMode: (m: AppMode) => void;
+  toggleMode: () => void;
+  setRecentlyChanged: (paths: string[]) => void;
   resetProject: () => void;
 }
 
