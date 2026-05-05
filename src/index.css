@@ -1,0 +1,241 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* RAINCAST design tokens — dark IDE theme. All colors HSL. */
+
+@layer base {
+  :root {
+    --background: 240 18% 4%;           /* #08080d */
+    --foreground: 220 15% 94%;
+
+    --panel: 240 16% 7%;                /* #0f0f16 */
+    --panel-foreground: 220 15% 94%;
+
+    --card: 240 16% 8%;
+    --card-foreground: 220 15% 94%;
+
+    --popover: 240 16% 8%;
+    --popover-foreground: 220 15% 94%;
+
+    /* Warm coral — signature color */
+    --primary: 16 100% 64%;             /* #ff7a47 */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 24 100% 70%;
+
+    --secondary: 240 10% 13%;
+    --secondary-foreground: 220 15% 94%;
+
+    --muted: 240 10% 11%;
+    --muted-foreground: 220 8% 58%;
+
+    --accent: 190 100% 60%;             /* electric cyan accent */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 10% 14%;              /* #1e1e27 */
+    --input: 240 10% 14%;
+    --ring: 16 100% 64%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 240 16% 6%;
+    --sidebar-foreground: 220 15% 85%;
+    --sidebar-primary: 16 100% 64%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 10% 11%;
+    --sidebar-accent-foreground: 220 15% 94%;
+    --sidebar-border: 240 10% 14%;
+    --sidebar-ring: 16 100% 64%;
+
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --gradient-accent: linear-gradient(135deg, hsl(16 100% 64%), hsl(340 85% 62%));
+    --gradient-aurora: radial-gradient(1200px 500px at 50% -10%, hsl(16 100% 64% / 0.18), transparent 60%),
+                       radial-gradient(800px 400px at 85% 20%, hsl(280 80% 60% / 0.12), transparent 60%),
+                       radial-gradient(900px 500px at 10% 40%, hsl(190 100% 55% / 0.10), transparent 60%);
+    --shadow-panel: 0 1px 0 hsl(0 0% 100% / 0.03) inset, 0 24px 60px -24px hsl(0 0% 0% / 0.7);
+    --shadow-preview: inset 0 0 40px hsl(0 0% 0% / 0.45), 0 24px 80px -24px hsl(0 0% 0% / 0.85);
+    --shadow-glow: 0 0 0 1px hsl(16 100% 64% / 0.25), 0 10px 40px -10px hsl(16 100% 64% / 0.4);
+  }
+
+  .dark {
+    --background: 240 18% 4%;
+    --foreground: 220 15% 94%;
+    --card: 240 16% 8%;
+    --card-foreground: 220 15% 94%;
+    --popover: 240 16% 8%;
+    --popover-foreground: 220 15% 94%;
+    --primary: 16 100% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 13%;
+    --secondary-foreground: 220 15% 94%;
+    --muted: 240 10% 11%;
+    --muted-foreground: 220 8% 58%;
+    --accent: 190 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 10% 14%;
+    --input: 240 10% 14%;
+    --ring: 16 100% 64%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.005em;
+  }
+  code, pre, .font-mono { font-family: var(--font-mono); }
+  .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.25);
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  .raincast-panel {
+    background: hsl(var(--panel));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-panel);
+  }
+  .raincast-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+  .raincast-scroll::-webkit-scrollbar-track { background: transparent; }
+  .raincast-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .raincast-scroll::-webkit-scrollbar-thumb:hover { background: hsl(240 10% 22%); background-clip: padding-box; }
+
+  /* Subtle grain overlay */
+  .raincast-grain {
+    position: relative;
+  }
+  .raincast-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity: 0.6;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  .raincast-aurora { background-image: var(--gradient-aurora); }
+
+  .raincast-gradient-text {
+    background: linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Animated gradient border used while building */
+@keyframes raincast-border-spin {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.raincast-building-border { position: relative; }
+.raincast-building-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+  background-size: 200% 200%;
+  animation: raincast-border-spin 3s ease infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Typing dots */
+@keyframes raincast-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.raincast-typing span {
+  display: inline-block;
+  width: 6px; height: 6px; margin: 0 2px;
+  background: hsl(var(--primary));
+  border-radius: 50%;
+  animation: raincast-dot 1.2s infinite ease-in-out;
+}
+.raincast-typing span:nth-child(2) { animation-delay: 0.15s; }
+.raincast-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+/* Progress sweep */
+@keyframes raincast-progress-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.raincast-progress-track {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 2px; overflow: hidden;
+  background: hsl(var(--border) / 0.6);
+  pointer-events: none;
+}
+.raincast-progress-bar {
+  position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.9), hsl(var(--primary-glow)), hsl(var(--primary) / 0.9), transparent);
+  box-shadow: 0 0 14px hsl(var(--primary) / 0.6);
+  animation: raincast-progress-sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Pulse orb for empty state */
+@keyframes raincast-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+.raincast-orb {
+  animation: raincast-pulse 3.5s ease-in-out infinite;
+  background: radial-gradient(circle at 30% 30%, hsl(var(--primary-glow)), hsl(var(--primary)) 55%, hsl(16 80% 40%) 100%);
+  box-shadow: 0 0 40px hsl(var(--primary) / 0.5), inset 0 0 30px hsl(0 0% 100% / 0.15);
+}
+
+/* Shimmer for skeletons */
+@keyframes raincast-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.raincast-shimmer {
+  background: linear-gradient(90deg, hsl(var(--border)) 0%, hsl(240 10% 20%) 50%, hsl(var(--border)) 100%);
+  background-size: 200% 100%;
+  animation: raincast-shimmer 2s infinite;
+}
+
+/* Kbd pill */
+.raincast-kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 4px;
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  border-bottom-width: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px; color: hsl(var(--muted-foreground));
+}
+
+html { color-scheme: dark; }
