@@ -86,6 +86,7 @@ import {
 import { AppChromeHeader } from './AppChromeHeader';
 import { AvatarMenu } from './AvatarMenu';
 import { ChatPane } from './ChatPane';
+import { Icon } from './Icon';
 import { decideAutoOpenAfterWrite } from './auto-open-file';
 import { FileWorkspace } from './FileWorkspace';
 import { CenteredLoader } from './Loading';
@@ -263,6 +264,7 @@ export function ProjectView({
   const [liveArtifacts, setLiveArtifacts] = useState<LiveArtifactSummary[]>([]);
   const [liveArtifactEvents, setLiveArtifactEvents] = useState<LiveArtifactEventItem[]>([]);
   const [workspaceFocused, setWorkspaceFocused] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   // PR #974 round 7 (mrcfps @ useDesignMdState.ts:131): counter that
   // bumps on file-changed SSE events, live_artifact* events, and the
   // chat streaming-completion edge so the staleness chip stays in sync
@@ -1975,6 +1977,15 @@ export function ProjectView({
             onBack={onBack}
           />
         )}
+        leftActions={(
+          <button
+            className="sidebar-toggle-btn"
+            onClick={() => setSidebarOpen(true)}
+            title="Open Menu"
+          >
+            <Icon name="menu" size={20} />
+          </button>
+        )}
       >
         <div className="app-project-title">
             <span
@@ -2116,6 +2127,53 @@ export function ProjectView({
           onDismiss={() => setProjectActionsToast(null)}
         />
       ) : null}
+
+      {/* Dark Sidebar Panel */}
+      <div className={`kairo-sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)}>
+        <div className="kairo-sidebar" onClick={(e) => e.stopPropagation()}>
+          <div className="sidebar-header">
+            <span className="sidebar-brand">Kairo AI</span>
+            <button className="close-sidebar" onClick={() => setSidebarOpen(false)}>
+              <Icon name="x" size={20} />
+            </button>
+          </div>
+          <div className="sidebar-content">
+            <div className="sidebar-section">
+              <h3>Workspace</h3>
+              <button className="sidebar-item active">
+                <Icon name="layout" size={18} />
+                <span>Dashboard</span>
+              </button>
+              <button className="sidebar-item">
+                <Icon name="folder" size={18} />
+                <span>Projects</span>
+              </button>
+            </div>
+            <div className="sidebar-section">
+              <h3>Settings</h3>
+              <button className="sidebar-item">
+                <Icon name="settings" size={18} />
+                <span>Preferences</span>
+              </button>
+              <button className="sidebar-item dark-mode-toggle" onClick={() => {
+                document.documentElement.classList.toggle('dark');
+              }}>
+                <Icon name="moon" size={18} />
+                <span>Theme Switcher</span>
+              </button>
+            </div>
+          </div>
+          <div className="sidebar-footer">
+            <div className="user-profile">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rudra" alt="avatar" />
+              <div className="user-info">
+                <span className="name">Rudra Pratap</span>
+                <span className="plan">Pro Plan</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

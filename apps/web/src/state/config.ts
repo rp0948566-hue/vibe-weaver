@@ -235,7 +235,22 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
       'qwen3-vl:235b',
       'qwen3-vl:235b-instruct',
       'qwen3.5:397b',
+      'qwen2.5-coder:7b',
       'rnj-1:8b',
+    ],
+  },
+  {
+    label: 'Local Ollama',
+    protocol: 'ollama',
+    baseUrl: 'http://127.0.0.1:11434',
+    model: 'qwen2.5-coder:7b',
+    models: [
+      'qwen2.5-coder:7b',
+      'qwen2.5-coder:14b',
+      'qwen2.5-coder:32b',
+      'phi:latest',
+      'llama3:latest',
+      'mistral:latest',
     ],
   },
   {

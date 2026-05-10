@@ -4,6 +4,7 @@ import { Icon } from './Icon';
 
 interface Props {
   actions?: ReactNode;
+  leftActions?: ReactNode;
   children?: ReactNode;
   onBack?: () => void;
   backLabel?: string;
@@ -11,12 +12,13 @@ interface Props {
 
 export const APP_CHROME_FILE_ACTIONS_ID = 'app-chrome-file-actions';
 
-export function AppChromeHeader({ actions, children, onBack, backLabel }: Props) {
+export function AppChromeHeader({ actions, leftActions, children, onBack, backLabel }: Props) {
   const t = useT();
   const resolvedBackLabel = backLabel ?? t('project.backToProjects');
 
   return (
     <header className="app-chrome-header">
+      {leftActions ? <div className="app-chrome-left-actions">{leftActions}</div> : null}
       <div className="app-chrome-traffic-space" aria-hidden />
       <div className="app-chrome-brand" aria-label={t('app.brand')}>
         <span className="app-chrome-mark" aria-hidden>

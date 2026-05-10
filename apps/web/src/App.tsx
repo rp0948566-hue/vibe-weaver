@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { EntryView } from './components/EntryView';
+import { LandingPage } from './components/LandingPage';
 import type { CreateInput } from './components/NewProjectPanel';
 import { PetOverlay } from './components/pet/PetOverlay';
 import { migrateCustomPetAtlas } from './components/pet/pets';
@@ -639,12 +640,12 @@ export function App() {
     if (!ok) return;
     setProjects((curr) => curr.filter((p) => p.id !== id));
     if (route.kind === 'project' && route.projectId === id) {
-      navigate({ kind: 'home' });
+      navigate({ kind: 'build' });
     }
   }, [route]);
 
   const handleBack = useCallback(() => {
-    navigate({ kind: 'home' });
+    navigate({ kind: 'build' });
   }, []);
 
   const handleClearPendingPrompt = useCallback(() => {
@@ -691,7 +692,7 @@ export function App() {
       if (cancelled) return;
       setProjects(list);
       if (!list.find((p) => p.id === route.projectId)) {
-        navigate({ kind: 'home' }, { replace: true });
+        navigate({ kind: 'build' }, { replace: true });
       }
     })();
     return () => {
@@ -811,6 +812,8 @@ export function App() {
           onProjectChange={handleProjectChange}
           onProjectsRefresh={refreshProjects}
         />
+      ) : route.kind === 'home' ? (
+        <LandingPage />
       ) : (
         <EntryView
           skills={enabledSkills}
